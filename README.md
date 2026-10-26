@@ -1,4 +1,4 @@
-# iPhone Duo Monitor
+# iPhone Duo Monitor 
 
 [![iPhone Duo Inventory Check](https://github.com/josephgattuso/iphone-duo-monitor/actions/workflows/iphone-stock.yml/badge.svg)](https://github.com/josephgattuso/iphone-duo-monitor/actions/workflows/iphone-stock.yml)
 
