@@ -32,16 +32,16 @@ jobs:
           pip install -r requirements.txt
           playwright install --with-deps chromium
 
+      - name: Validate Python syntax
+        run: python -m py_compile stock_monitor.py
+
       - name: Check nearby Apple Stores
         env:
           APPLE_POSTCODE: ${{ secrets.APPLE_POSTCODE }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-
           APPLE_PRODUCT_URL: "https://www.apple.com/uk/shop/buy-iphone/iphone-duo"
-
           PREFERRED_COLOUR: "Night Sky"
           PREFERRED_STORAGE: "512GB"
           CHECK_ALTERNATIVES: "true"
           HEADLESS: "true"
-
         run: python stock_monitor.py
