@@ -1,6 +1,6 @@
 # iPhone Duo Monitor
 
-[![Monitor iPhone Duo pickup stock](https://github.com/josephgattuso/iphone-duo-monitor/actions/workflows/iphone-stock.yml/badge.svg)](https://github.com/josephgattuso/iphone-duo-monitor/actions/workflows/iphone-stock.yml)
+[![iPhone Duo Inventory Check](https://github.com/josephgattuso/iphone-duo-monitor/actions/workflows/iphone-stock.yml/badge.svg)](https://github.com/josephgattuso/iphone-duo-monitor/actions/workflows/iphone-stock.yml)
 
 A modest Python agent that automates Apple Store checks for shifts in iPhone Duo inventory.
 
