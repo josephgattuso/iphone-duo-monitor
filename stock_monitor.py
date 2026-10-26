@@ -104,8 +104,7 @@ def contains_pattern(text: str, patterns: Iterable[str]) -> bool:
     return any(re.search(pattern, text, re.IGNORECASE) for pattern in patterns)
 
 
-def variant_order() -> list[Variant]:
-    preferred = Variant(PREFERRED_COLOUR, PREFERRED_STORAGE)
+def variant_order() -> listpreferred = Variant(PREFERRED_COLOUR, PREFERRED_STORAGE)
 
     if not CHECK_ALTERNATIVES:
         return [preferred]
@@ -116,11 +115,6 @@ def variant_order() -> list[Variant]:
         for storage in STORAGE_OPTIONS
     ]
 
-    # Preference order:
-    # 1. Exact requested model.
-    # 2. Same colour, other capacities.
-    # 3. Same capacity, other colours.
-    # 4. Everything else.
     variants.sort(
         key=lambda variant: (
             0
@@ -297,8 +291,11 @@ def visible_store_containers(page: Page) -> list[Locator]:
                     contains_pattern(text, AVAILABLE_PATTERNS)
                     or contains_pattern(text, UNAVAILABLE_PATTERNS)
                     or re.search(r"\bpickup\b", text, re.IGNORECASE)
-                    if availability_language:
+                )
+
+                if availability_language:
                     visible.append(item)
+
             except Exception:
                 continue
 
@@ -368,17 +365,15 @@ def parse_store_results(page: Page) -> liststores: list[StoreAvailability] = []
             )
         )
 
-    # Remove duplicate cards without logging private location data.
     unique: dict[str, StoreAvailability] = {}
 
     for store in stores:
-        key = store.store.casefold()
-        unique[key] = store
+        unique[store.store.casefold()] = store
 
     return list(unique.values())
 
 
-def check_variant(
+ddef check_variant(
     page: Page,
     variant: Variant,
 ) -> listpage.goto(
