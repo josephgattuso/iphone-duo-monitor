@@ -1,13 +1,8 @@
 # iPhone Duo Pickup Stock Monitor
 
+[![Monitor iPhone Duo pickup stock](https://github.com/josephgattuso/iphone-duo-monitor/actions/workflows/iphone-stock.yml/badge.svg)](https://github.com/josephgattuso/iphone-duo-monitor/actions/workflows/iphone-stock.yml)
+
 A small Python and Playwright agent that checks nearby Apple Stores for iPhone Duo pickup availability and sends a private push notification through ntfy.
-
-The monitor prioritises the following configuration:
-
-- **Colour:** Night Sky
-- **Storage:** 512GB
-
-If the preferred configuration is unavailable, the monitor can also check other colours and storage capacities.
 
 ## Features
 
@@ -41,27 +36,6 @@ The preferred configuration is checked first. Alternatives are checked in this o
 
 Preferred matches are labelled `PREFERRED MATCH`. All other matches are labelled `ALTERNATIVE`.
 
-## Privacy
-
-This project is designed to be safe to publish, but you must configure it correctly.
-
-Do not commit:
-
-- Your postcode
-- Your private ntfy topic
-- A populated `.env` file
-- Screenshots containing nearby store information
-- Browser traces or HAR files
-- Stock results tied to your location
-- A `stock_state.json` file from an older version of the monitor
-
-The postcode and ntfy topic should be stored as GitHub Actions secrets. The workflow passes them to the monitor only while it is running.
-
-The script deliberately avoids printing the postcode or detailed nearby-store results to public GitHub Actions logs. Store details are sent through the private notification instead.
-
-> [!IMPORTANT]
-> If sensitive information was previously committed, adding it to `.gitignore` does not remove it from Git history. Remove it from the repository history or publish the project from a new, clean repository.
-
 ## Project structure
 
 ```text
@@ -74,3 +48,10 @@ The script deliberately avoids printing the postcode or detailed nearby-store re
 ├── README.md
 ├── requirements.txt
 └── stock_monitor.py
+```
+
+## Privacy
+
+This project is designed to be safe to publish, but you must configure it correctly. The postcode and ntfy topic should be stored as GitHub Actions secrets. The workflow passes them to the monitor only while it is running.
+
+The script deliberately avoids printing the postcode or detailed nearby-store results to public GitHub Actions logs. Store details are sent through the private notification instead.
