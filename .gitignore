@@ -1,0 +1,22 @@
+# Local private configuration
+.env
+.env.*
+!.env.example
+
+# Previous monitor state
+stock_state.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Playwright diagnostics
+playwright-report/
+test-results/
+trace.zip
+*.har
+
+# Local screenshots
+*.png
