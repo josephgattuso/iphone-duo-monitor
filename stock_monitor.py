@@ -1,4 +1,3 @@
-import json
 import os
 import re
 import sys
@@ -18,19 +17,15 @@ PRODUCT_URL = os.getenv(
     "https://www.apple.com/uk/shop/buy-iphone/iphone-duo",
 )
 
-# Keep these in GitHub Actions secrets.
 POSTCODE = os.getenv("APPLE_POSTCODE", "").strip()
 NTFY_TOPIC = os.getenv("NTFY_TOPIC", "").strip()
 
-# Preferred configuration.
 PREFERRED_COLOUR = os.getenv("PREFERRED_COLOUR", "Night Sky").strip()
 PREFERRED_STORAGE = os.getenv("PREFERRED_STORAGE", "512GB").strip()
 
-# Set to false if you only want the preferred configuration.
 CHECK_ALTERNATIVES = (
     os.getenv("CHECK_ALTERNATIVES", "true").strip().lower() == "true"
 )
-
 HEADLESS = os.getenv("HEADLESS", "true").strip().lower() != "false"
 
 COLOURS = ("Night Sky", "Star White")
@@ -104,7 +99,8 @@ def contains_pattern(text: str, patterns: Iterable[str]) -> bool:
     return any(re.search(pattern, text, re.IGNORECASE) for pattern in patterns)
 
 
-def variant_order() -> listpreferred = Variant(PREFERRED_COLOUR, PREFERRED_STORAGE)
+def variant_order() -> list[Variant]:
+    preferred = Variant(PREFERRED_COLOUR, PREFERRED_STORAGE)
 
     if not CHECK_ALTERNATIVES:
         return [preferred]
@@ -115,6 +111,9 @@ def variant_order() -> listpreferred = Variant(PREFERRED_COLOUR, PREFERRED_STORA
         for storage in STORAGE_OPTIONS
     ]
 
+    if preferred not in variants:
+        variants.append(preferred)
+
     variants.sort(
         key=lambda variant: (
             0
@@ -124,8 +123,12 @@ def variant_order() -> listpreferred = Variant(PREFERRED_COLOUR, PREFERRED_STORA
             else 2
             if variant.storage.casefold() == PREFERRED_STORAGE.casefold()
             else 3,
-            STORAGE_OPTIONS.index(variant.storage),
-            COLOURS.index(variant.colour),
+            STORAGE_OPTIONS.index(variant.storage)
+            if variant.storage in STORAGE_OPTIONS
+            else len(STORAGE_OPTIONS),
+            COLOURS.index(variant.colour)
+            if variant.colour in COLOURS
+            else len(COLOURS),
         )
     )
 
@@ -133,9 +136,7 @@ def variant_order() -> listpreferred = Variant(PREFERRED_COLOUR, PREFERRED_STORA
 
 
 def click_first_visible(locator: Locator, timeout: int = 4_000) -> bool:
-    count = locator.count()
-
-    for index in range(count):
+    for index in range(locator.count()):
         candidate = locator.nth(index)
 
         try:
@@ -151,70 +152,49 @@ def click_first_visible(locator: Locator, timeout: int = 4_000) -> bool:
 
 
 def accept_cookies(page: Page) -> None:
-    for label in (
-        "Accept All",
-        "Accept all",
-        "Allow All",
-        "Continue",
-    ):
-        if click_first_visible(
-            page.get_by_role("button", name=re.compile(
-                rf"^{re.escape(label)}$",
-                re.IGNORECASE,
-            )),
-            timeout=2_000,
-        ):
+    for label in ("Accept All", "Accept all", "Allow All", "Continue"):
+        button = page.get_by_role(
+            "button",
+            name=re.compile(rf"^{re.escape(label)}$", re.IGNORECASE),
+        )
+
+        if click_first_visible(button, timeout=2_000):
             page.wait_for_timeout(500)
             return
 
 
 def select_option(page: Page, value: str) -> bool:
-    exact_text = page.get_by_text(value, exact=True)
-
-    if click_first_visible(exact_text):
-        page.wait_for_timeout(1_000)
-        return True
-
-    labels = page.get_by_label(re.compile(re.escape(value), re.IGNORECASE))
-
-    if click_first_visible(labels):
-        page.wait_for_timeout(1_000)
-        return True
-
-    buttons = page.get_by_role(
-        "button",
-        name=re.compile(re.escape(value), re.IGNORECASE),
+    candidates = (
+        page.get_by_text(value, exact=True),
+        page.get_by_label(re.compile(re.escape(value), re.IGNORECASE)),
+        page.get_by_role(
+            "button",
+            name=re.compile(re.escape(value), re.IGNORECASE),
+        ),
+        page.get_by_role(
+            "radio",
+            name=re.compile(re.escape(value), re.IGNORECASE),
+        ),
     )
 
-    if click_first_visible(buttons):
-        page.wait_for_timeout(1_000)
-        return True
+    for candidate in candidates:
+        if click_first_visible(candidate):
+            page.wait_for_timeout(1_000)
+            return True
 
     return False
 
 
 def open_pickup_search(page: Page) -> bool:
+    name_pattern = re.compile(
+        r"check availability|pick up from store|pickup",
+        re.IGNORECASE,
+    )
+
     controls = (
-        page.get_by_role(
-            "button",
-            name=re.compile(
-                r"check availability|pick up from store|pickup",
-                re.IGNORECASE,
-            ),
-        ),
-        page.get_by_role(
-            "link",
-            name=re.compile(
-                r"check availability|pick up from store|pickup",
-                re.IGNORECASE,
-            ),
-        ),
-        page.get_by_text(
-            re.compile(
-                r"check availability|pick up from store",
-                re.IGNORECASE,
-            )
-        ),
+        page.get_by_role("button", name=name_pattern),
+        page.get_by_role("link", name=name_pattern),
+        page.get_by_text(name_pattern),
     )
 
     for control in controls:
@@ -257,12 +237,7 @@ def enter_postcode(page: Page) -> bool:
 
 
 def visible_store_containers(page: Page) -> list[Locator]:
-    """
-    Find visible containers that appear to represent store availability.
-
-    Apple may change its markup, so several accessible and card-style
-    selectors are checked instead of relying on one internal class name.
-    """
+    """Return visible page elements that appear to contain store stock data."""
     locator_candidates = (
         page.locator(
             '[data-autom*="store" i], '
@@ -295,7 +270,6 @@ def visible_store_containers(page: Page) -> list[Locator]:
 
                 if availability_language:
                     visible.append(item)
-
             except Exception:
                 continue
 
@@ -306,22 +280,17 @@ def visible_store_containers(page: Page) -> list[Locator]:
 
 
 def infer_store_name(container: Locator, full_text: str) -> str:
-    heading = container.get_by_role("heading")
+    headings = container.get_by_role("heading")
 
-    for index in range(heading.count()):
+    for index in range(headings.count()):
         try:
-            name = normalise(heading.nth(index).inner_text(timeout=1_500))
+            name = normalise(headings.nth(index).inner_text(timeout=1_500))
             if name:
                 return name
         except Exception:
             continue
 
-    lines = [
-        normalise(line)
-        for line in full_text.splitlines()
-        if normalise(line)
-    ]
-
+    lines = [normalise(line) for line in full_text.splitlines() if normalise(line)]
     ignored = re.compile(
         r"available|unavailable|pickup|directions|details|today|tomorrow",
         re.IGNORECASE,
@@ -334,7 +303,8 @@ def infer_store_name(container: Locator, full_text: str) -> str:
     return "Nearby Apple Store"
 
 
-def parse_store_results(page: Page) -> liststores: list[StoreAvailability] = []
+def parse_store_results(page: Page) -> list[StoreAvailability]:
+    stores: list[StoreAvailability] = []
 
     for container in visible_store_containers(page):
         try:
@@ -343,16 +313,8 @@ def parse_store_results(page: Page) -> liststores: list[StoreAvailability] = []
             continue
 
         text = normalise(raw_text)
-        lower_text = text.casefold()
-
-        unavailable = contains_pattern(
-            lower_text,
-            UNAVAILABLE_PATTERNS,
-        )
-        available = (
-            contains_pattern(lower_text, AVAILABLE_PATTERNS)
-            and not unavailable
-        )
+        unavailable = contains_pattern(text, UNAVAILABLE_PATTERNS)
+        available = contains_pattern(text, AVAILABLE_PATTERNS) and not unavailable
 
         if not available:
             continue
@@ -373,10 +335,8 @@ def parse_store_results(page: Page) -> liststores: list[StoreAvailability] = []
     return list(unique.values())
 
 
-ddef check_variant(
-    page: Page,
-    variant: Variant,
-) -> listpage.goto(
+def check_variant(page: Page, variant: Variant) -> list[StoreAvailability]:
+    page.goto(
         PRODUCT_URL,
         wait_until="domcontentloaded",
         timeout=90_000,
@@ -403,25 +363,24 @@ def send_notification(
     variant: Variant,
     stores: list[StoreAvailability],
 ) -> None:
-    priority = "PREFERRED MATCH" if variant.is_preferred else "ALTERNATIVE"
+    match_type = "PREFERRED MATCH" if variant.is_preferred else "ALTERNATIVE"
 
     store_lines = "\n".join(
-        f"• {store.store}: {store.details}"
-        for store in stores
+        f"• {store.store}: {store.details}" for store in stores
     )
 
     message = (
-        f"{priority}\n"
+        f"{match_type}\n"
         f"iPhone Duo {variant.label} appears available for pickup.\n\n"
         f"{store_lines}\n\n"
-        f"Open Apple to confirm and order: {PRODUCT_URL}"
+        "Open Apple to confirm availability and place the order."
     )
 
     request = urllib.request.Request(
         f"https://ntfy.sh/{NTFY_TOPIC}",
         data=message.encode("utf-8"),
         headers={
-            "Title": f"iPhone Duo pickup: {priority}",
+            "Title": f"iPhone Duo pickup: {match_type}",
             "Priority": "max" if variant.is_preferred else "high",
             "Tags": "iphone,shopping,white_check_mark",
             "Click": PRODUCT_URL,
@@ -435,8 +394,6 @@ def send_notification(
 
 def main() -> int:
     validate_configuration()
-    variants = variant_order()
-
     matches: list[tuple[Variant, list[StoreAvailability]]] = []
 
     with sync_playwright() as playwright:
@@ -447,14 +404,13 @@ def main() -> int:
         )
         page = context.new_page()
 
-        for variant in variants:
+        for variant in variant_order():
             try:
                 stores = check_variant(page, variant)
                 if stores:
                     matches.append((variant, stores))
             except Exception:
-                # Deliberately omit page content, postcode and store details
-                # from public Actions logs.
+                # Avoid exposing postcode or nearby-store details in public logs.
                 continue
 
         browser.close()
@@ -462,7 +418,6 @@ def main() -> int:
     for variant, stores in matches:
         send_notification(variant, stores)
 
-    # Safe output for a public workflow log.
     if matches:
         print("Stock check completed. Private notification sent.")
     else:
