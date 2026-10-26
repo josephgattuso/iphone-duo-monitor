@@ -123,10 +123,13 @@ def variant_order() -> list[Variant]:
     # 4. Everything else.
     variants.sort(
         key=lambda variant: (
-            0 if variant.is_preferred else
-            1 if variant.colour.casefold() == PREFERRED_COLOUR.casefold() else
-            2 if variant.storage.casefold() == PREFERRED_STORAGE.casefold() else
-            3,
+            0
+            if variant.is_preferred
+            else 1
+            if variant.colour.casefold() == PREFERRED_COLOUR.casefold()
+            else 2
+            if variant.storage.casefold() == PREFERRED_STORAGE.casefold()
+            else 3,
             STORAGE_OPTIONS.index(variant.storage),
             COLOURS.index(variant.colour),
         )
@@ -261,9 +264,12 @@ def enter_postcode(page: Page) -> bool:
 
 def visible_store_containers(page: Page) -> list[Locator]:
     """
-    Apple may change its markup. These selectors intentionally target several
-    common accessible/card patterns rather than one internal class name.
-    
+    Find visible containers that appear to represent store availability.
+
+    Apple may change its markup, so several accessible and card-style
+    selectors are checked instead of relying on one internal class name.
+    """
+    locator_candidates = (
         page.locator(
             '[data-autom*="store" i], '
             '[data-testid*="store" i], '
@@ -276,7 +282,7 @@ def visible_store_containers(page: Page) -> list[Locator]:
     )
 
     for locator in locator_candidates:
-        visible = []
+        visible: list[Locator] = []
 
         for index in range(locator.count()):
             item = locator.nth(index)
@@ -291,9 +297,7 @@ def visible_store_containers(page: Page) -> list[Locator]:
                     contains_pattern(text, AVAILABLE_PATTERNS)
                     or contains_pattern(text, UNAVAILABLE_PATTERNS)
                     or re.search(r"\bpickup\b", text, re.IGNORECASE)
-                )
-
-                if availability_language:
+                    if availability_language:
                     visible.append(item)
             except Exception:
                 continue
@@ -333,7 +337,7 @@ def infer_store_name(container: Locator, full_text: str) -> str:
     return "Nearby Apple Store"
 
 
-def parse_store_results(page: Page) -> liststores = []
+def parse_store_results(page: Page) -> liststores: list[StoreAvailability] = []
 
     for container in visible_store_containers(page):
         try:
@@ -344,7 +348,10 @@ def parse_store_results(page: Page) -> liststores = []
         text = normalise(raw_text)
         lower_text = text.casefold()
 
-        unavailable = contains_pattern(lower_text, UNAVAILABLE_PATTERNS)
+        unavailable = contains_pattern(
+            lower_text,
+            UNAVAILABLE_PATTERNS,
+        )
         available = (
             contains_pattern(lower_text, AVAILABLE_PATTERNS)
             and not unavailable
@@ -362,7 +369,8 @@ def parse_store_results(page: Page) -> liststores = []
         )
 
     # Remove duplicate cards without logging private location data.
-    unique = {}
+    unique: dict[str, StoreAvailability] = {}
+
     for store in stores:
         key = store.store.casefold()
         unique[key] = store
@@ -370,7 +378,10 @@ def parse_store_results(page: Page) -> liststores = []
     return list(unique.values())
 
 
-def check_variant(page: Page, variant: Variant) -> listpage.goto(
+def check_variant(
+    page: Page,
+    variant: Variant,
+) -> listpage.goto(
         PRODUCT_URL,
         wait_until="domcontentloaded",
         timeout=90_000,
