@@ -1,8 +1,8 @@
-# iPhone Duo Pickup Stock Monitor
+# iPhone Duo Monitor
 
 [![Monitor iPhone Duo pickup stock](https://github.com/josephgattuso/iphone-duo-monitor/actions/workflows/iphone-stock.yml/badge.svg)](https://github.com/josephgattuso/iphone-duo-monitor/actions/workflows/iphone-stock.yml)
 
-A small Python and Playwright agent that checks nearby Apple Stores for iPhone Duo pickup availability and sends a private push notification through ntfy.
+A modest Python agent that automates Apple Store checks for shifts in iPhone Duo inventory.
 
 ## Features
 
